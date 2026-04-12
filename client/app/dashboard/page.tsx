@@ -12,7 +12,7 @@ interface Feedback {
   createdAt: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 const SOURCE_LABEL: Record<string, string> = { manual: 'Manual', csv: 'CSV' };
 const SOURCE_STYLE: Record<string, string> = {
