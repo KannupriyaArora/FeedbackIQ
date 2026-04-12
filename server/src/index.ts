@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import { connectDB } from './config/db';
 import healthRouter from './routes/health';
+import feedbackRouter from './routes/feedbackRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -10,6 +11,7 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 
 app.use('/api/health', healthRouter);
+app.use('/api/feedback', feedbackRouter);
 
 app.use(errorHandler);
 
