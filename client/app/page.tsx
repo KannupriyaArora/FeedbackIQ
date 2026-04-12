@@ -9,9 +9,7 @@ export default function Home() {
           Now in beta
         </span>
 
-        <h1 className="text-5xl font-semibold tracking-tight text-gray-900">
-          FeedbackIQ
-        </h1>
+        <h1 className="text-5xl font-semibold tracking-tight text-gray-900">FeedbackIQ</h1>
 
         <p className="text-lg text-gray-500">
           Collect, organise, and understand feedback — all in one place.

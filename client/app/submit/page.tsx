@@ -54,11 +54,9 @@ export default function SubmitPage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-          Submit Feedback
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Submit Feedback</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Share your thoughts and we'll analyse them for you.
+          Share your thoughts and we will analyse them for you.
         </p>
       </div>
 
@@ -103,14 +101,13 @@ export default function SubmitPage() {
               },
             })}
             className={`w-full rounded-lg border bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 shadow-sm outline-none transition resize-none
-              ${errors.rawText
-                ? 'border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-100'
-                : 'border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100'
+              ${
+                errors.rawText
+                  ? 'border-red-300 focus:border-red-400 focus:ring-2 focus:ring-red-100'
+                  : 'border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100'
               }`}
           />
-          {errors.rawText && (
-            <p className="text-xs text-red-500">{errors.rawText.message}</p>
-          )}
+          {errors.rawText && <p className="text-xs text-red-500">{errors.rawText.message}</p>}
         </div>
 
         {/* Source dropdown */}

@@ -53,9 +53,7 @@ function EmptyState() {
         💬
       </div>
       <p className="text-sm font-medium text-gray-900">No feedback yet</p>
-      <p className="mt-1 text-sm text-gray-400">
-        Submit your first entry and it will appear here.
-      </p>
+      <p className="mt-1 text-sm text-gray-400">Submit your first entry and it will appear here.</p>
       <Link href="/submit" className="mt-5">
         <Button variant="primary">Submit Feedback</Button>
       </Link>
@@ -65,15 +63,16 @@ function EmptyState() {
 
 // ── Feedback card ────────────────────────────────────────────────────────────
 function FeedbackCard({ item }: { item: Feedback }) {
-  const preview = item.rawText.length > 100
-    ? item.rawText.slice(0, 100).trimEnd() + '…'
-    : item.rawText;
+  const preview =
+    item.rawText.length > 100 ? item.rawText.slice(0, 100).trimEnd() + '…' : item.rawText;
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md hover:border-gray-200">
       {/* Badges row */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${SOURCE_STYLE[item.source]}`}>
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${SOURCE_STYLE[item.source]}`}
+        >
           {SOURCE_LABEL[item.source]}
         </span>
         <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 ring-1 ring-gray-200">
@@ -112,15 +111,13 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Your Insights
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Your Insights</h1>
           <p className="mt-1 text-sm text-gray-500">
             {loading
               ? 'Loading feedback…'
               : error
-              ? ''
-              : `${items.length} ${items.length === 1 ? 'entry' : 'entries'}`}
+                ? ''
+                : `${items.length} ${items.length === 1 ? 'entry' : 'entries'}`}
           </p>
         </div>
         <Link href="/submit">
