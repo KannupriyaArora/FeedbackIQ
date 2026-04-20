@@ -249,6 +249,72 @@ function FeedbackCard({ item }: { item: Feedback }) {
   );
 }
 
+// ── Report modal ──────────────────────────────────────────────────────────────
+function ReportModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Report ready!</h2>
+            <p className="mt-0.5 text-sm text-gray-500">Share this link with anyone.</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="ml-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+            aria-label="Close"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+          <p className="flex-1 truncate font-mono text-xs text-gray-700">{url}</p>
+          <button
+            onClick={handleCopy}
+            className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-violet-600 transition hover:bg-violet-50"
+          >
+            {copied ? '✓ Copied' : 'Copy'}
+          </button>
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <Button variant="primary" className="text-xs">
+              View Report →
+            </Button>
+          </a>
+          <Button variant="secondary" className="text-xs" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [items, setItems] = useState<Feedback[]>([]);
@@ -258,6 +324,9 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<SentimentFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState('');
 
   useEffect(() => {
     fetch(`${API_URL}/api/feedback`)
@@ -301,6 +370,33 @@ export default function DashboardPage() {
     setCategoryFilter('all');
   }
 
+  async function generateReport() {
+    setGenerating(true);
+    setGenerateError('');
+    try {
+      const title = `Feedback Report — ${new Date().toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })}`;
+      const res = await fetch(`${API_URL}/api/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, feedbackIds: filtered.map((i) => i._id) }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setGenerateError(body.errors?.[0]?.msg ?? body.error ?? 'Failed to generate report.');
+        return;
+      }
+      setReportUrl(`${window.location.origin}/report/${body.slug}`);
+    } catch {
+      setGenerateError('Network error. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   const subtitleText = loading
     ? 'Loading feedback…'
     : error
@@ -310,64 +406,82 @@ export default function DashboardPage() {
         : `${items.length} ${items.length === 1 ? 'entry' : 'entries'}`;
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Your Insights</h1>
-          <p className="mt-1 text-sm text-gray-500">{subtitleText}</p>
+    <>
+      <main className="mx-auto max-w-5xl px-6 py-12">
+        {/* Header */}
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Your Insights</h1>
+            <p className="mt-1 text-sm text-gray-500">{subtitleText}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {filtered.length > 0 && (
+              <Button variant="outline" onClick={generateReport} disabled={generating}>
+                {generating ? 'Generating…' : 'Generate Report'}
+              </Button>
+            )}
+            <Link href="/submit">
+              <Button variant="primary">+ Add Feedback</Button>
+            </Link>
+          </div>
         </div>
-        <Link href="/submit">
-          <Button variant="primary">+ Add Feedback</Button>
-        </Link>
-      </div>
 
-      {/* Stats bar */}
-      <StatsBar stats={stats} loading={statsLoading} />
+        {/* Generate report error */}
+        {generateError && (
+          <div className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {generateError}
+          </div>
+        )}
 
-      {/* Charts */}
-      <ChartsSection stats={stats} loading={statsLoading} />
+        {/* Stats bar */}
+        <StatsBar stats={stats} loading={statsLoading} />
 
-      {/* Error */}
-      {error && (
-        <div className="mb-6 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </div>
-      )}
+        {/* Charts */}
+        <ChartsSection stats={stats} loading={statsLoading} />
 
-      {/* Loading skeletons */}
-      {loading && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </div>
-      )}
+        {/* Error */}
+        {error && (
+          <div className="mb-6 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
-      {/* No data */}
-      {!loading && !error && items.length === 0 && <EmptyState />}
+        {/* Loading skeletons */}
+        {loading && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        )}
 
-      {/* Filter bar + grid */}
-      {!loading && !error && items.length > 0 && (
-        <>
-          <FilterBar
-            sentimentFilter={sentimentFilter}
-            onSentimentChange={setSentimentFilter}
-            categoryFilter={categoryFilter}
-            onCategoryChange={setCategoryFilter}
-            categories={categories}
-          />
-          {filtered.length === 0 ? (
-            <FilterEmptyState onReset={resetFilters} />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {filtered.map((item) => (
-                <FeedbackCard key={item._id} item={item} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-    </main>
+        {/* No data */}
+        {!loading && !error && items.length === 0 && <EmptyState />}
+
+        {/* Filter bar + grid */}
+        {!loading && !error && items.length > 0 && (
+          <>
+            <FilterBar
+              sentimentFilter={sentimentFilter}
+              onSentimentChange={setSentimentFilter}
+              categoryFilter={categoryFilter}
+              onCategoryChange={setCategoryFilter}
+              categories={categories}
+            />
+            {filtered.length === 0 ? (
+              <FilterEmptyState onReset={resetFilters} />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {filtered.map((item) => (
+                  <FeedbackCard key={item._id} item={item} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {reportUrl && <ReportModal url={reportUrl} onClose={() => setReportUrl(null)} />}
+    </>
   );
 }

@@ -4,6 +4,7 @@ import cors from 'cors';
 import { connectDB } from './config/db';
 import healthRouter from './routes/health';
 import feedbackRouter from './routes/feedbackRoutes';
+import reportRouter from './routes/reportRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -41,6 +42,7 @@ app.use(express.json());
 
 app.use('/api/health', healthRouter);
 app.use('/api/feedback', feedbackRouter);
+app.use('/api/reports', reportRouter);
 
 app.use(errorHandler);
 
