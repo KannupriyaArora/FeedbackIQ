@@ -1,6 +1,11 @@
 import Groq from 'groq-sdk';
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let _client: Groq | null = null;
+function getClient(): Groq | null {
+  if (!process.env.GROQ_API_KEY) return null;
+  if (!_client) _client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return _client;
+}
 
 export interface AnalysisResult {
   sentiment: 'positive' | 'negative' | 'neutral';
@@ -28,6 +33,11 @@ The JSON must have exactly these fields:
 
 export async function analyzeFeedback(text: string): Promise<AnalysisResult> {
   try {
+    const client = getClient();
+    if (!client) {
+      console.error('analyzeFeedback: GROQ_API_KEY is not set');
+      return FALLBACK;
+    }
     const completion = await client.chat.completions.create({
       model: 'llama-3.1-8b-instant',
       max_tokens: 256,
