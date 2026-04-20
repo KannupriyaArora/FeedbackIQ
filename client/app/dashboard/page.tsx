@@ -14,6 +14,15 @@ interface Feedback {
   createdAt: string;
 }
 
+interface Stats {
+  total: number;
+  positive: number;
+  negative: number;
+  neutral: number;
+  topCategories: { category: string; count: number }[];
+  averageConfidence: number;
+}
+
 type SentimentFilter = 'all' | 'positive' | 'negative' | 'neutral';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -42,7 +51,55 @@ function formatDate(dateStr: string): string {
   });
 }
 
-// ── Skeleton ─────────────────────────────────────────────────────────────────
+function pct(part: number, total: number): string {
+  if (total === 0) return '—';
+  return `${Math.round((part / total) * 100)}%`;
+}
+
+// ── Stat cards ────────────────────────────────────────────────────────────────
+function StatCard({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <p className="text-2xl font-semibold tracking-tight text-gray-900">{value}</p>
+      <p className="mt-1 text-xs font-medium text-gray-400">{label}</p>
+    </div>
+  );
+}
+
+function SkeletonStatCard() {
+  return (
+    <div className="animate-pulse rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="h-7 w-16 rounded bg-gray-100" />
+      <div className="mt-2 h-3 w-24 rounded bg-gray-100" />
+    </div>
+  );
+}
+
+function StatsBar({ stats, loading }: { stats: Stats | null; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonStatCard key={i} />
+        ))}
+      </div>
+    );
+  }
+  if (!stats || stats.total === 0) return null;
+
+  const topCat = stats.topCategories[0]?.category ?? '—';
+
+  return (
+    <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <StatCard value={String(stats.total)} label="Total Feedback" />
+      <StatCard value={pct(stats.positive, stats.total)} label="Positive" />
+      <StatCard value={pct(stats.negative, stats.total)} label="Negative" />
+      <StatCard value={topCat} label="Top Category" />
+    </div>
+  );
+}
+
+// ── Skeleton card ─────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
     <div className="animate-pulse rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -115,7 +172,6 @@ function FilterBar({
 
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3">
-      {/* Sentiment pills */}
       <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1">
         {sentiments.map(({ value, label }) => (
           <button
@@ -132,7 +188,6 @@ function FilterBar({
         ))}
       </div>
 
-      {/* Category dropdown */}
       {categories.length > 0 && (
         <select
           value={categoryFilter}
@@ -158,7 +213,6 @@ function FeedbackCard({ item }: { item: Feedback }) {
 
   return (
     <div className="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-200 hover:shadow-md">
-      {/* Badges */}
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         {item.sentiment ? (
           <span
@@ -183,15 +237,12 @@ function FeedbackCard({ item }: { item: Feedback }) {
         </span>
       </div>
 
-      {/* Raw text preview */}
       <p className="text-sm leading-relaxed text-gray-800">{preview}</p>
 
-      {/* AI summary */}
       {item.summary && (
         <p className="mt-2 text-xs italic leading-relaxed text-gray-400">{item.summary}</p>
       )}
 
-      {/* Date */}
       <p className="mt-auto pt-4 text-xs text-gray-400">{formatDate(item.createdAt)}</p>
     </div>
   );
@@ -200,7 +251,9 @@ function FeedbackCard({ item }: { item: Feedback }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [items, setItems] = useState<Feedback[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<SentimentFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -214,6 +267,15 @@ export default function DashboardPage() {
       .then(setItems)
       .catch(() => setError('Could not load feedback. Is the server running?'))
       .finally(() => setLoading(false));
+
+    fetch(`${API_URL}/api/feedback/stats`)
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json() as Promise<Stats>;
+      })
+      .then(setStats)
+      .catch(() => null)
+      .finally(() => setStatsLoading(false));
   }, []);
 
   const categories = useMemo(
@@ -259,6 +321,9 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {/* Stats bar */}
+      <StatsBar stats={stats} loading={statsLoading} />
+
       {/* Error */}
       {error && (
         <div className="mb-6 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -275,7 +340,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* No data at all */}
+      {/* No data */}
       {!loading && !error && items.length === 0 && <EmptyState />}
 
       {/* Filter bar + grid */}

@@ -130,6 +130,55 @@ router.post(
   }
 );
 
+// GET /api/feedback/stats
+router.get(
+  '/stats',
+  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const [result] = await Feedback.aggregate([
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            sentimentCounts: [
+              { $match: { sentiment: { $ne: null } } },
+              { $group: { _id: '$sentiment', count: { $sum: 1 } } },
+            ],
+            topCategories: [
+              { $match: { category: { $ne: null } } },
+              { $group: { _id: '$category', count: { $sum: 1 } } },
+              { $sort: { count: -1 } },
+              { $limit: 5 },
+              { $project: { _id: 0, category: '$_id', count: 1 } },
+            ],
+            avgConfidence: [
+              { $match: { confidence: { $ne: null } } },
+              { $group: { _id: null, avg: { $avg: '$confidence' } } },
+            ],
+          },
+        },
+      ]);
+
+      const total: number = result.total[0]?.count ?? 0;
+
+      const sentimentMap: Record<string, number> = {};
+      for (const { _id, count } of result.sentimentCounts as { _id: string; count: number }[]) {
+        sentimentMap[_id] = count;
+      }
+
+      res.json({
+        total,
+        positive: sentimentMap['positive'] ?? 0,
+        negative: sentimentMap['negative'] ?? 0,
+        neutral: sentimentMap['neutral'] ?? 0,
+        topCategories: result.topCategories as { category: string; count: number }[],
+        averageConfidence: Number((result.avgConfidence[0]?.avg ?? 0).toFixed(2)),
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // GET /api/feedback
 router.get(
   '/',
