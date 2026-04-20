@@ -212,9 +212,7 @@ export default function SubmitPage() {
                       : 'border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-100'
                   }`}
               />
-              {errors.rawText && (
-                <p className="text-xs text-red-500">{errors.rawText.message}</p>
-              )}
+              {errors.rawText && <p className="text-xs text-red-500">{errors.rawText.message}</p>}
             </div>
 
             {serverError && (
@@ -243,12 +241,12 @@ export default function SubmitPage() {
           {uploadStatus === 'success' && uploadResult ? (
             <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-4">
               <p className="text-sm font-medium text-green-800">
-                {uploadResult.successful}{' '}
-                {uploadResult.successful === 1 ? 'entry' : 'entries'} analysed successfully!
+                {uploadResult.successful === 1 ? '1 entry' : `${uploadResult.successful} entries`}{' '}
+                analysed successfully!
               </p>
               {uploadResult.failed > 0 && (
                 <p className="mt-1 text-xs text-green-600">
-                  {uploadResult.failed} {uploadResult.failed === 1 ? 'row' : 'rows'} skipped
+                  {uploadResult.failed === 1 ? '1 row' : `${uploadResult.failed} rows`} skipped
                   (empty rawText or invalid).
                 </p>
               )}
