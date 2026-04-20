@@ -23,6 +23,8 @@ function isAllowedOrigin(origin: string): boolean {
   });
 }
 
+app.set('trust proxy', 1);
+
 app.use(
   cors({
     origin: (origin, callback) => {
