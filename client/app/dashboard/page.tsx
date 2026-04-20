@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import Button from '../../components/Button';
+import ChartsSection from '../../components/ChartsSection';
 
 interface Feedback {
   _id: string;
@@ -323,6 +324,9 @@ export default function DashboardPage() {
 
       {/* Stats bar */}
       <StatsBar stats={stats} loading={statsLoading} />
+
+      {/* Charts */}
+      <ChartsSection stats={stats} loading={statsLoading} />
 
       {/* Error */}
       {error && (
