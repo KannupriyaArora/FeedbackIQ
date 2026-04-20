@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, query, validationResult } from 'express-validator';
 import { Feedback } from '../models/Feedback';
+import { analyzeFeedback } from '../services/aiService';
 
 const router = Router();
 
@@ -27,6 +28,19 @@ router.post(
     try {
       const { rawText, source } = req.body;
       const feedback = await Feedback.create({ rawText, source });
+
+      try {
+        const analysis = await analyzeFeedback(rawText);
+        feedback.sentiment = analysis.sentiment;
+        feedback.category = analysis.category;
+        feedback.summary = analysis.summary;
+        feedback.confidence = analysis.confidence;
+        feedback.analyzedAt = new Date();
+        await feedback.save();
+      } catch (aiErr) {
+        console.error('AI analysis failed, feedback saved without analysis:', aiErr);
+      }
+
       res.status(201).json(feedback);
     } catch (err) {
       next(err);

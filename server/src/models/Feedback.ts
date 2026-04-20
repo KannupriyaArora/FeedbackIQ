@@ -5,6 +5,9 @@ export interface IFeedback extends Document {
   source: 'manual' | 'csv';
   sentiment: 'positive' | 'negative' | 'neutral' | null;
   category: string | null;
+  summary: string | null;
+  confidence: number | null;
+  analyzedAt: Date | null;
   createdAt: Date;
 }
 
@@ -18,6 +21,9 @@ const FeedbackSchema = new Schema<IFeedback>(
       default: null,
     },
     category: { type: String, default: null },
+    summary: { type: String, default: null },
+    confidence: { type: Number, default: null },
+    analyzedAt: { type: Date, default: null },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
