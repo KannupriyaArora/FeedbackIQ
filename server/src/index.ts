@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db';
+import { seedDemoReport } from './config/seedDemo';
 import healthRouter from './routes/health';
 import feedbackRouter from './routes/feedbackRoutes';
 import reportRouter from './routes/reportRoutes';
@@ -47,7 +48,8 @@ app.use('/api/reports', reportRouter);
 app.use(errorHandler);
 
 connectDB()
-  .then(() => {
+  .then(async () => {
+    await seedDemoReport().catch((err) => console.error('Demo seed failed:', err));
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
