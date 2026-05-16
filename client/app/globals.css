@@ -9,6 +9,6 @@
   }
 
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-[#0f172a] text-white;
   }
 }
