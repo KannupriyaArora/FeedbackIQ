@@ -19,9 +19,12 @@ const csvUploadLimit = rateLimit({
 });
 
 // POST /api/feedback
+// NOTE: userId is trusted from the client. In production, verify it server-side
+// using Clerk's JWT (e.g. with @clerk/backend verifyToken) instead of trusting req.body.
 router.post(
   '/',
   [
+    body('userId').isString().trim().notEmpty().withMessage('userId is required'),
     body('rawText')
       .isString()
       .trim()
@@ -39,8 +42,8 @@ router.post(
     }
 
     try {
-      const { rawText, source } = req.body;
-      const feedback = await Feedback.create({ rawText, source });
+      const { userId, rawText, source } = req.body;
+      const feedback = await Feedback.create({ userId, rawText, source });
 
       try {
         const analysis = await analyzeFeedback(rawText);
@@ -62,11 +65,19 @@ router.post(
 );
 
 // POST /api/feedback/csv
+// NOTE: userId is trusted from the client. In production, verify it server-side
+// using Clerk's JWT (e.g. with @clerk/backend verifyToken) instead of trusting req.body.
 router.post(
   '/csv',
   csvUploadLimit,
   upload.single('file'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const userId = req.body?.userId as string | undefined;
+    if (!userId) {
+      res.status(400).json({ error: 'userId is required.' });
+      return;
+    }
+
     if (!req.file) {
       res.status(400).json({ error: 'No file uploaded. Send a CSV as form-data field "file".' });
       return;
@@ -107,7 +118,7 @@ router.post(
       const source: 'manual' | 'csv' = row.source === 'manual' ? 'manual' : 'csv';
 
       try {
-        const feedback = await Feedback.create({ rawText, source });
+        const feedback = await Feedback.create({ userId, rawText, source });
         try {
           const analysis = await analyzeFeedback(rawText);
           feedback.sentiment = analysis.sentiment;
@@ -126,16 +137,26 @@ router.post(
       }
     }
 
-    res.status(200).json({ total: rows.length, successful, failed });
+    res.status(201).json({ total: rows.length, successful, failed });
   }
 );
 
-// GET /api/feedback/stats
+// GET /api/feedback/stats?userId=xxx
 router.get(
   '/stats',
-  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  [query('userId').isString().trim().notEmpty().withMessage('userId query param is required')],
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+
     try {
+      const userMatch = { userId: req.query.userId as string };
+
       const [result] = await Feedback.aggregate([
+        { $match: userMatch },
         {
           $facet: {
             total: [{ $count: 'count' }],
@@ -179,10 +200,11 @@ router.get(
   }
 );
 
-// GET /api/feedback
+// GET /api/feedback?userId=xxx
 router.get(
   '/',
   [
+    query('userId').isString().trim().notEmpty().withMessage('userId query param is required'),
     query('source')
       .optional()
       .isIn(['manual', 'csv'])
@@ -196,7 +218,7 @@ router.get(
     }
 
     try {
-      const filter: Record<string, string> = {};
+      const filter: Record<string, string> = { userId: req.query.userId as string };
       if (req.query.source) {
         filter.source = req.query.source as string;
       }

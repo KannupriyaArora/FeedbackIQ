@@ -1,6 +1,7 @@
 import { Schema, model, Document } from 'mongoose';
 
 export interface IFeedback extends Document {
+  userId: string;
   rawText: string;
   source: 'manual' | 'csv';
   sentiment: 'positive' | 'negative' | 'neutral' | null;
@@ -13,6 +14,7 @@ export interface IFeedback extends Document {
 
 const FeedbackSchema = new Schema<IFeedback>(
   {
+    userId: { type: String, required: true, index: true },
     rawText: { type: String, required: true },
     source: { type: String, enum: ['manual', 'csv'], required: true },
     sentiment: {
