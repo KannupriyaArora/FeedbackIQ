@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import { connectDB } from './config/db';
 import { seedDemoReport } from './config/seedDemo';
 import healthRouter from './routes/health';
@@ -40,6 +41,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 app.use('/api/health', healthRouter);
 app.use('/api/feedback', feedbackRouter);
